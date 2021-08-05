@@ -13,21 +13,22 @@ to = gamma(:,2:end)-gamma(:,1:end-1);
 seg_lens = sqrt(sum(to.^2,1));
 s = [0 cumsum(seg_lens)];
 
-% Plot the curve
+% Plot the B-Spline curve
 figure;
-plot(gamma(1,:), gamma(2,:));
+hold on;
+scatter(spline.cp(1,:), spline.cp(2,:),32,'k','s','filled','MarkerEdgeColor','none');
+plot(spline.cp(1,:), spline.cp(2,:),'k--');
+plot(gamma(1,:), gamma(2,:),'LineWidth',2,'Color',[1 0 0]);
 title('Spline Curve');
 axis tight equal;
 
 % Initialize stiffness optimizer
+[~, gamma_infl] = spline.findInflectionPoints();
+lpopt = LPStiffnessOptimizer(gamma, kappa, gamma_infl);
 
-lpopt = LPStiffnessOptimizer(gamma, kappa);
 % TODO1: This is the first method that needs to be implemented
 K = lpopt.optimizeSimple();
 
-% [~, gamma_infl] = spline.findInflectionPoints();
-% lpopt = LPStiffnessOptimizer(gamma, kappa, gamma_infl);
-%
 % TODO2: Once the 'simple' version works, you can also implement this
 % method, and compare the results on a curve with an inflection point.
 % K = lpopt.optimizeWithInflections();
