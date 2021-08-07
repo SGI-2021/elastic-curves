@@ -1,23 +1,16 @@
-Dear all,
-
-Welcome to the SGI project on elastic curves and how to connect them with joints!
-We will get started with the project proper on Monday, so I put together a list of topics that you can look into during the weekend if you feel like it.
-
 Mathsy stuff:
- - Broadly speaking, this project will involve some calculus and optimization. If it has been a while since your last calculus class, brush up on concepts such as "partial derivatives", "gradients", "local minima", and "Lagrange multipliers".
+ - On Monday, I'm planning to start us off with a mix between a variational calculus presentation, and a few maths exercises sprinkled in-between. I don't think you need to do any specific reading for this in advance, but if it has been a while since your last calculus class, brush up on concepts such as "partial derivatives", "gradients", "local minima", and "Lagrange multipliers".
+   - I don't want to give any specific references for this, because it would be boring if all of us have exactly the same view and intuition on these things :) But naturally, Youtube is full of videos on multi-variable calculus and optimization.
  - The central mathematical objects in this project are plane curves from differential geometry. Remind yourself of concepts such as "parametrized curves", "tangents", "curvature", "arc-length parametrizations", "inflection points".
- - This has probably come up during SGI already: writing a system of linear equations (or inequalities) in matrix form.
+   - There is great presentation about curves by Keenan Crane: https://www.youtube.com/watch?v=seLcPBax3OI
+   - For a super-concise summary of the differential geometry of curves, check 1.1-1.3 of https://www.geometrie.tuwien.ac.at/hertrich-jeromin/pub/dg.pdf (It's for curves in R3 rather than R2, but many of the definitions are the same)
 
 Computer-sciencey stuff:
- - A popular representation for free-form curves on a computer are "B-Spline curves". These are used in software such as Illustrator and Blender to let the user define curves by manipulating control points. To get a feel for how they work, start up Blender, select Add > Curve > Nurbs Curve, and play with the control points and the order (degree) of the curve. The Matlab code that we will use has a B-Spline curve implementation already, so feel free to take a look at that as well.
+ - A popular representation for free-form curves on a computer are "B-Spline curves". These are used in software such as Blender to let the user define curves by manipulating control points. To get a feel for how they work, start up Blender, select Add > Curve > Nurbs Curve, and play with the control points, the order (degree) of the curve, and the other settings it offers. The Matlab code that we will use has a B-Spline curve implementation already, so feel free to take a look at that as well.
  - We will use Matlab to solve "linear programs", i.e., optimization problems in which a linear objective function is min/maximized, subject to linear equality and inequality constraints. Take a look at the documentation for Matlab's linear program solver and try out some of the examples: https://www.mathworks.com/help/optim/ug/linprog.html
  - Matlab has mechanisms for writing code that reacts to user interactions with figures. Find out how you can let the user define control points for a B-Spline curve by clicking on a figure. Can you let the user drag existing controls points around to manipulate the curve? Can you redraw the updated B-Spline curve in real time?
 
 Codebase:
- - The code base we will use is pretty minimal: It only has an implementation of B-Spline curves, and a few functions that generate 2d geometry as vector graphics and export it to SVG.
+ - The code base we will build on is pretty minimal: It only has an implementation of B-Spline curves, and a few functions that generate 2d geometry as vector graphics and export it to SVG.
  - You can check out the code from the repository 'elastic-curves' on the SGI-2021 GitHub. The 'main' script is test_spline_curve.m.
 
-Super looking forward to our project! :)
-
-Best regards,
-Christian
