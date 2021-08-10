@@ -18,8 +18,8 @@ classdef UserInterface < handle
     
     methods
          function obj = UserInterface(cp)
-            obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event), ...
-                             'WindowButtonMotionFcn', @mouseMove);
+            obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event))
+                             %'WindowButtonMotionFcn', @(source, event) obj.mouseMove(source, event));
                              %'WindowButtonUpFcn', @(source, event) obj.mouseUp(source, event));
             obj.ax = axes(obj.fig);
             xlim([0,1]);
@@ -36,15 +36,18 @@ classdef UserInterface < handle
             % figure property : selection type 
             if(strcmp(obj.fig.SelectionType, 'normal')) % moving points
                 obj.mouseflag = true;
+                set(gcf,...
+                    'WindowButtonMotionFcn',  @(source, event) obj.mouseMove(source, event),...
+                    'WindowButtonUpFcn', @(source, event) obj.mouseUp(source, event));
 
                 while obj.mouseflag
                     
-                    currpoint = obj.ax.CurrentPoint;
-                    coord = [currpoint(1,1); currpoint(1,2)];
-                    closestInd = obj.closestPoint();
-
-                    obj.cp(:,closestInd) = coord;
-                    obj.drawPoints();
+%                     currpoint = obj.ax.CurrentPoint;
+%                     coord = [currpoint(1,1); currpoint(1,2)];
+%                     closestInd = obj.closestPoint();
+% 
+%                     obj.cp(:,closestInd) = coord;
+%                     obj.drawPoints();
                 end
 
             elseif(strcmp(obj.fig.SelectionType, 'extend')) % adding points
@@ -103,6 +106,8 @@ classdef UserInterface < handle
 
         function mouseMove(obj, source, event)
             % called when the mouse is pressed down and moving
+            %currpoint = obj.ax.CurrentPoint;
+            closestInd = obj.closestPoint();
             
         end
 
