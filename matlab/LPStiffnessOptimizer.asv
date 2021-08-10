@@ -27,12 +27,11 @@ classdef LPStiffnessOptimizer < handle
         % and the 2-by-1 column vector "b".
         function [K, a, b] = optimizeSimple(obj)
             f = [0,0,0,1];
-            temp = [zeros(obj.num_samples, 1); -ones(obj.num_samples, 1)];
-            A = [-1 ./ obj.kappa, -obj.gamma(:,1) ./ obj.kappa, -obj.gamma(:,2) ./ obj.kappa, temp];
-            b = [-ones(obj.num_samples, 1), zeros(obj.num_samples, 1)];
+            A = -[1 ./ obj.kappa, obj.gamma(:,1) ./ obj.kappa, obj.gamma(:,2) ./ obj.kappa, zeros(obj.num_samples)];
+            b = -ones(obj.num_samples, 1);
             ab = linprog(f,A,b);
 
-            K = -(ab(1:3)' * A');
+            K = -(ab' * A');
             a = ab(1);
             b = ab(2:3);
             
@@ -41,15 +40,14 @@ classdef LPStiffnessOptimizer < handle
         % Like "optimizeSimple" but adds equality constraints for
         % inflection points to the linear program explicitly.
         function [K, a, b] = optimizeWithInflections(obj)
-            f = [0,0,0,1];
-            temp = [zeros(obj.num_samples, 1); -ones(obj.num_samples, 1)];
-            A = [-1 ./ obj.kappa, -obj.gamma(:,1) ./ obj.kappa, -obj.gamma(:,2) ./ obj.kappa, temp];
-            b = [-ones(obj.num_samples, 1), zeros(obj.num_samples, 1)];
+            f = [1,1,1];
+            A = -[1 ./ obj.kappa, obj.gamma(:,1) ./ obj.kappa, obj.gamma(:,2) ./ obj.kappa];
+            b = -ones(obj.num_samples, 1);
             Aeq = [ones(size(obj.gamma_infl,2),1), obj.gamma(:, obj.gamma_infl(:,1)), obj.gamma(:, obj.gamma_infl(:,2))];
             beq = zeros(size(obj.gamma_infl,2),1);
             ab = linprog(f,A,b,Aeq,beq);
     
-            K = -(ab(1:3)' * A');
+            K = -(ab' * A');
             a = ab(1);
             b = ab(2:3);
         end
