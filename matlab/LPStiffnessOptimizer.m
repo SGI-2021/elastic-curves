@@ -33,7 +33,7 @@ classdef LPStiffnessOptimizer < handle
             b = [-ones(obj.num_samples, 1), zeros(obj.num_samples, 1)];
             abM = linprog(f,A,b);
 
-            K = -(abM(1:3)' * A(:,1:3)');
+            K = -(abM(1:3)' * A(1:obj.num_samples,1:3)');
             a = abM(1);
             b = abM(2:3);
             
@@ -51,7 +51,7 @@ classdef LPStiffnessOptimizer < handle
             beq = zeros(size(obj.gamma_infl,2),1);
             abM = linprog(f,A,b,Aeq,beq);
     
-            K = -(abM(1:3)' * A(:,1:3)');
+            K = -(abM(1:3)' * A(1:obj.num_samples,1:3)');
             a = abM(1);
             b = abM(2:3);
         end
