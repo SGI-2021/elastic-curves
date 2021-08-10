@@ -27,14 +27,15 @@ classdef LPStiffnessOptimizer < handle
         % and the 2-by-1 column vector "b".
         function [K, a, b] = optimizeSimple(obj)
             f = [0,0,0,1];
-            temp = [zeros(obj.num_samples, 1); -ones(obj.num_samples, 1)];
-            A = [-1 ./ obj.kappa, -obj.gamma(:,1) ./ obj.kappa, -obj.gamma(:,2) ./ obj.kappa, temp];
+            A1 = [-ones(obj.num_samples, 1) ./ obj.kappa', -obj.gamma(1,:)' ./ obj.kappa', -obj.gamma(2,:)' ./ obj.kappa', zeros(obj.num_samples, 1)];
+            A2 = [ones(obj.num_samples, 1) ./ obj.kappa', obj.gamma(1,:)' ./ obj.kappa', obj.gamma(2,:)' ./ obj.kappa', -ones(obj.num_samples, 1)];
+            A = [A1; A2];
             b = [-ones(obj.num_samples, 1), zeros(obj.num_samples, 1)];
-            ab = linprog(f,A,b);
+            abM = linprog(f,A,b);
 
-            K = -(ab(1:3)' * A');
-            a = ab(1);
-            b = ab(2:3);
+            K = -(abM(1:3)' * A(:,1:3)');
+            a = abM(1);
+            b = abM(2:3);
             
         end
         
@@ -42,16 +43,17 @@ classdef LPStiffnessOptimizer < handle
         % inflection points to the linear program explicitly.
         function [K, a, b] = optimizeWithInflections(obj)
             f = [0,0,0,1];
-            temp = [zeros(obj.num_samples, 1); -ones(obj.num_samples, 1)];
-            A = [-1 ./ obj.kappa, -obj.gamma(:,1) ./ obj.kappa, -obj.gamma(:,2) ./ obj.kappa, temp];
+            A1 = [-ones(obj.num_samples, 1) ./ obj.kappa', -obj.gamma(1,:)' ./ obj.kappa', -obj.gamma(2,:)' ./ obj.kappa', zeros(obj.num_samples, 1)];
+            A2 = [ones(obj.num_samples, 1) ./ obj.kappa', obj.gamma(1,:)' ./ obj.kappa', obj.gamma(2,:)' ./ obj.kappa', -ones(obj.num_samples, 1)];
+            A = [A1; A2];
             b = [-ones(obj.num_samples, 1), zeros(obj.num_samples, 1)];
             Aeq = [ones(size(obj.gamma_infl,2),1), obj.gamma(:, obj.gamma_infl(:,1)), obj.gamma(:, obj.gamma_infl(:,2))];
             beq = zeros(size(obj.gamma_infl,2),1);
-            ab = linprog(f,A,b,Aeq,beq);
+            abM = linprog(f,A,b,Aeq,beq);
     
-            K = -(ab(1:3)' * A');
-            a = ab(1);
-            b = ab(2:3);
+            K = -(abM(1:3)' * A(:,1:3)');
+            a = abM(1);
+            b = abM(2:3);
         end
     end
 end
