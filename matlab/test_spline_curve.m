@@ -1,5 +1,5 @@
 % Import the spline curve and scale it to be about 30 cm long
-spline = SplineCurve.import('rect_spline.txt');
+spline = SplineCurve.import('rect_spline1.txt');
 scale = 0.08;
 spline.cp = spline.cp * scale;
 num_samples = 400;
@@ -27,11 +27,11 @@ axis tight equal;
 lpopt = LPStiffnessOptimizer(gamma, kappa, gamma_infl);
 
 % TODO1: This is the first method that needs to be implemented
-K = lpopt.optimizeSimple();
+%K = lpopt.optimizeSimple();
 
 % TODO2: Once the 'simple' version works, you can also implement this
 % method, and compare the results on a curve with an inflection point.
-% K = lpopt.optimizeWithInflections();
+K = lpopt.optimizeWithInflections();
 
 if isempty(K)
     fprintf('Curve is infeasible!');
