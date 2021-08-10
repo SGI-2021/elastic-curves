@@ -36,12 +36,18 @@ classdef UserInterface < handle
                 obj.mouseflag = true;
 
             elseif(strcmp(obj.fig.SelectionType, 'extend')) % adding points
+                % 2x3 matlab matrix where mouse click is
+                currpoint = obj.ax.CurrentPoint;
+                % x and y coordinates of the mouse click
+                coord = [currpoint(1,1); currpoint(1,2)];
 
+                % appending the coordinates to the end of the cp matrix
+                obj.cp = [obj.cp, coord];
             elseif(strcmp(obj.fig.SelectionType, 'alt')) % deleting points
 
 
             end
-            
+
             currpoint = obj.ax.CurrentPoint;
             fprintf('Current point: %.5f %.5f \n', currpoint(1,1), currpoint(1,2));
             obj.cp(:,1) = currpoint(1, 1:2)';
@@ -56,6 +62,16 @@ classdef UserInterface < handle
 
         function mouseMove(obj, source, event)
             % called when the mouse is pressed down and moving
+            
+        end
+
+        function closestPoint(obj)
+            % 2x3 matlab matrix where mouse click is
+            currpoint = obj.ax.CurrentPoint;
+            % x and y coordinates of the mouse click
+            coord = [currpoint(1,1); currpoint(1,2)];
+            
+            [~, Ind] = min()
             
         end
 
