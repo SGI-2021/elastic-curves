@@ -18,7 +18,7 @@ classdef UserInterface < handle
     
     methods
          function obj = UserInterface(cp)
-            obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event))
+            obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event));
                              %'WindowButtonUpFcn', @(source, event) obj.mouseUp(source, event));
             obj.ax = axes(obj.fig);
             xlim([0,1]);
@@ -35,6 +35,7 @@ classdef UserInterface < handle
             % figure property : selection type 
             if(strcmp(obj.fig.SelectionType, 'normal')) % moving points
                 obj.mouseflag = true;
+                
 
 
 
@@ -88,7 +89,6 @@ classdef UserInterface < handle
         
         function mouseUp(obj, source, event)
             % called when the mouse is released
- 
             obj.mouseflag = false;
         end
 
