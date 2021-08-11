@@ -10,7 +10,15 @@ classdef UserInterface < handle
         ax % axes
 
         cp  % control points
+        lines %lines connecting control points
+        splineplot % drawing of spline
+
         spline % spline curve object
+        num_samples % number of samples taken
+
+        gamma
+        kappa % curvature
+        s
 
         pointpatch % 
         mouseflag
@@ -21,7 +29,6 @@ classdef UserInterface < handle
             obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source),...
                              'WindowButtonUpFcn', @(source, event) obj.mouseUp(source, event), ...
                              'WindowButtonMotionFcn', @(source, event) obj.mouseMove(source, event));
-                             
 
             %obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event))
                              %'WindowButtonMotionFcn', @(source, event) obj.mouseMove(source, event));
@@ -30,8 +37,32 @@ classdef UserInterface < handle
             xlim([0,1]);
             ylim([0,1]);
             obj.cp = cp;
-            obj.pointpatch = patch('Vertices', cp', 'Faces', [1:size(cp,2)]', 'Parent', obj.ax, 'Marker', 'o');
+
             obj.mouseflag = false;
+
+            hold on;
+            obj.pointpatch = patch('Vertices', cp', ...
+                                   'Faces', [1:size(cp,2)]', ...
+                                   'Parent', obj.ax, ...
+                                   'Marker', '.');
+            obj.lines = plot(obj.cp(1,:), obj.cp(2,:),'k--');
+
+            obj.spline = SplineCurve.import('rect_spline1.txt');
+            scale = 0.08;
+            obj.spline.cp = obj.spline.cp * scale;
+            obj.num_samples = 400;
+
+            % Sample the curve, and approximate the arc-length parameter s at every
+            % sample
+            t_samples = linspace(0,obj.spline.t_max, obj.num_samples);
+            obj.gamma = obj.spline.evaluate(t_samples);
+            obj.kappa = obj.spline.curvature(t_samples);
+            to = obj.gamma(:,2:end)-obj.gamma(:,1:end-1);
+            seg_lens = sqrt(sum(to.^2,1));
+            obj.s = [0 cumsum(seg_lens)];
+
+            obj.splineplot = plot(obj.gamma(1,:), obj.gamma(2,:),'LineWidth',2,'Color',[1 0 0]);
+
         end
 
         function mouseDown(obj, source, event)
@@ -54,7 +85,7 @@ classdef UserInterface < handle
                 % control point is shift-clicked, adds a control point in
                 % between the last and second from last control points             
 
-                if(isempty(obj.cp))
+                if(isempty(obj.cp) || size(obj.cp,2) == 1)
                     % If there are no control points add a control point
                     % where the cursors is
                     currpoint = obj.ax.CurrentPoint;
@@ -62,10 +93,11 @@ classdef UserInterface < handle
 
                     obj.cp = coord;
                     obj.drawPoints();
+                    
                     return
                 end
 
-                % Computs nearest control point
+                % Computes nearest control point
                 closestInd = obj.closestPoint();
                 
                 % Adds control point
@@ -82,6 +114,7 @@ classdef UserInterface < handle
                 
                 % Draws contol point
                 obj.drawPoints();
+                %obj.drawSpline();
                                
             % DELETING POINTS (CONTROL-CLICK)
             elseif(strcmp(source.SelectionType, 'alt'))
@@ -93,6 +126,7 @@ classdef UserInterface < handle
                 obj.cp(:,closestInd) = [];
 
                 obj.drawPoints();
+                %obj.drawSpline();
                 
             end
         end
@@ -101,6 +135,8 @@ classdef UserInterface < handle
         % Updates mouseflag when mouse is not being pressed
         function mouseUp(obj, source, event)
             obj.mouseflag = false;
+            obj.spline.setControlPoints(obj.cp);
+            obj.drawSpline();
         end
 
         % Moves a Control Point 
@@ -111,12 +147,10 @@ classdef UserInterface < handle
                  currpoint = obj.ax.CurrentPoint;
                  coords = [currpoint(1,1); currpoint(1,2)];
                  obj.cp(:, closestInd) = coords;
-                 obj.drawPoints()   
-             end
-   
-            
-             
-            
+                 obj.drawPoints();
+                 
+            end
+        
         end
         
         % Finds the closest control point when mouse is clicked
@@ -129,6 +163,7 @@ classdef UserInterface < handle
             d1 = (obj.cp(1,:)' - repmat(coord(1), size(obj.cp,2), 1));
             d2 = (obj.cp(2,:)' - repmat(coord(2), size(obj.cp,2), 1));
             d = [d1,d2];
+
             [~, Ind] = min(normrow(d), [], 'linear');
             
         end
@@ -140,7 +175,9 @@ classdef UserInterface < handle
         end
 
         function drawSpline(obj)
-        
+            obj.lines = plot(obj.cp(1,:), obj.cp(2,:),'k--');
+            %obj.splineplot = plot(obj.gamma(1,:), obj.gamma(2,:),'LineWidth',2,'Color',[1 0 0]);
+
         end
 
        

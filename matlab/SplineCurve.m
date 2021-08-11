@@ -44,6 +44,17 @@ classdef SplineCurve < handle
             obj.t_max = size(cp, 2) - deg;
             obj.msi = obj.t_max - 1;
         end
+
+        % Takes control points as property and adapts properties in
+        % constructor
+        function setControlPoints(obj, cp)
+            obj.spline = BSpline(obj.degree);
+            obj.cp = cp;
+            obj.dim = size(cp, 1);
+            obj.ncp = size(cp, 2);
+            obj.t_max = size(cp, 2) - obj.degree;
+            obj.msi = obj.t_max - 1;
+        end
         
         function ret = evaluateAbstract(obj, t, func)
             t = t(:)';
