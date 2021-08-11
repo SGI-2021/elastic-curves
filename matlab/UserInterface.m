@@ -18,8 +18,7 @@ classdef UserInterface < handle
     
     methods
          function obj = UserInterface(cp)
-            obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event), ...
-                             'WindowButtonMotionFcn', @mouseMove);
+            obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event))
                              %'WindowButtonUpFcn', @(source, event) obj.mouseUp(source, event));
             obj.ax = axes(obj.fig);
             xlim([0,1]);
@@ -37,15 +36,7 @@ classdef UserInterface < handle
             if(strcmp(obj.fig.SelectionType, 'normal')) % moving points
                 obj.mouseflag = true;
 
-                while obj.mouseflag
-                    
-                    currpoint = obj.ax.CurrentPoint;
-                    coord = [currpoint(1,1); currpoint(1,2)];
-                    closestInd = obj.closestPoint();
 
-                    obj.cp(:,closestInd) = coord;
-                    obj.drawPoints();
-                end
 
             elseif(strcmp(obj.fig.SelectionType, 'extend')) % adding points
                 % 2x3 matlab matrix where mouse click is
