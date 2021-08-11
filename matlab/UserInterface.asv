@@ -18,9 +18,12 @@ classdef UserInterface < handle
     
     methods
          function obj = UserInterface(cp)
-            obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event));
+            obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event),...
+                             'WindowButtonUpFcn', @(source, event) obj.mouseUp(source, event), ...
+                             'WindowButtonMotionFcn', @(source, event) obj.mouseMove(source, event));
+                             
 
-            obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event))
+            %obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event))
                              %'WindowButtonMotionFcn', @(source, event) obj.mouseMove(source, event));
                              %'WindowButtonUpFcn', @(source, event) obj.mouseUp(source, event));
             obj.ax = axes(obj.fig);
@@ -32,22 +35,28 @@ classdef UserInterface < handle
         end
 
         function mouseDown(obj, source, event)
-            % called when the mouse is pushed down
-            % left click for move and add, maybe hold down shift for add
-            % right click for deletion
-            % figure property : selection type 
-            if(strcmp(obj.fig.SelectionType, 'normal')) % moving points
+            % Called when a mouse button is pushed 
+            % LEFT CLICK DRAG: MOVE POINT
+            % SHIFT CLICK: ADD POINT
+            % CONTROL CLICK : DELETE POINT
+            
+            % MOVE POINTS (LEFT CLICK):
+            if(strcmp(source.SelectionType, 'normal')) 
+                % Checks to see if a left-click is made and updates
+                % the mouseflag to be used by mouseMove              
                 obj.mouseflag = true;
-                % TODO: IMPLEMENT DRAG AND DROP %
+ 
+            % ADDING POINTS (SHIFT CLICK):
+            elseif(strcmp(source.SelectionType, 'extend')) 
+                % Checks if a shift-click is made near a control point
+                % Adds another control point in between  the control point
+                % that was shift-clicked and the next one. If the last 
+                % control point is shift-clicked, adds a control point in
+                % between the last and second from last control points             
 
-            elseif(strcmp(obj.fig.SelectionType, 'extend')) % adding points
-                % 2x3 matlab matrix where mouse click is
-                %currpoint = obj.ax.CurrentPoint;
-                % x and y coordinates of the mouse click
-                %coord = [currpoint(1,1); currpoint(1,2)];
-
-                
                 if(isempty(obj.cp))
+                    % If there are no control points add a control point
+                    % where the cursors is
                     currpoint = obj.ax.CurrentPoint;
                     coord = [currpoint(1,1); currpoint(1,2)];
 
@@ -56,9 +65,11 @@ classdef UserInterface < handle
                     return
                 end
 
+                % Computs nearest control point
                 closestInd = obj.closestPoint();
-                    
-                if(closestInd ~= size(obj.cp,2))
+                
+                % Adds control point
+                if(closestInd ~= size(obj.cp,2)) 
                     midpoint = ((obj.cp(:,closestInd) + obj.cp(:,closestInd+1))'./2)';
                     c1 = obj.cp(:,1:closestInd);
                     c2 = midpoint;
@@ -68,35 +79,44 @@ classdef UserInterface < handle
                     midpoint = ((obj.cp(:,end) + obj.cp(:,end-1))'./2)';
                     obj.cp = [obj.cp(:,1:end-1), midpoint, obj.cp(:,end)];
                 end
-
+                
+                % Draws contol point
                 obj.drawPoints();
-                    
-            elseif(strcmp(obj.fig.SelectionType, 'alt')) % deleting points
+                               
+            % DELETING POINTS (CONTROL-CLICK)
+            elseif(strcmp(source.SelectionType, 'alt'))
+                % Checks for a control-click
+                % Deletes the control point that is control-clicked
                 
                 closestInd = obj.closestPoint();
 
                 obj.cp(:,closestInd) = [];
 
                 obj.drawPoints();
-
+                
             end
-
-%             currpoint = obj.ax.CurrentPoint;
-%             fprintf('Current point: %.5f %.5f \n', currpoint(1,1), currpoint(1,2));
-%             obj.cp(:,1) = currpoint(1, 1:2)';
-%             obj.drawPoints();
-            
         end
-        
+
+     
+        % Updates mouseflag when m
         function mouseUp(obj, source, event)
             % called when the mouse is released
             obj.mouseflag = false;
         end
 
         function mouseMove(obj, source, event)
-            % called when the mouse is pressed down and moving
-            %currpoint = obj.ax.CurrentPoint;
-            closestInd = obj.closestPoint();
+            % called twhen the mouse is pressed down and moving
+            % currpoint = obj.ax.CurrentPoint;
+             if(obj.mouseflag == true)
+                 closestInd = obj.closestPoint();
+                 currpoint = obj.ax.CurrentPoint;
+                 coords = [currpoint(1,1); currpoint(1,2)];
+                 obj.cp(:, closestInd) = coords;
+                 obj.drawPoints()   
+             end
+   
+            
+             
             
         end
 
