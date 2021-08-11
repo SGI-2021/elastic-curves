@@ -5,14 +5,19 @@ classdef UserInterface < handle
     % How to distiguish between adding new points and dragging around
     % doc figure -> see also -> figure properties for documentations
     
+    properties(Access = private)
+        cp  % control points
+    end
+
     properties 
         fig % figure opened
         figstrip % second figure
         ax % axes
-
-        cp  % control points
+        axstrip % axes for strip
+        
         lines %lines connecting control points
         splineplot % drawing of spline
+        strip % optimised strip
 
         spline % spline curve object
         num_samples % number of samples taken
@@ -27,13 +32,12 @@ classdef UserInterface < handle
             obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source),...
                              'WindowButtonUpFcn', @(source, event) obj.mouseUp(source, event), ...
                              'WindowButtonMotionFcn', @(source, event) obj.mouseMove(source, event));
+            title('Spline curve');
 
-            %obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source, event))
-                             %'WindowButtonMotionFcn', @(source, event) obj.mouseMove(source, event));
-                             %'WindowButtonUpFcn', @(source, event) obj.mouseUp(source, event));
             obj.ax = axes(obj.fig);
-            xlim([0,1]);
-            ylim([0,1]);
+            %axis tight equal;
+            xlim([-1,1]);
+            ylim([-1,1]);
             obj.cp = cp;
 
             obj.mouseflag = false;
@@ -55,6 +59,14 @@ classdef UserInterface < handle
             gamma = obj.spline.evaluate(t_samples);
             obj.splineplot = plot(gamma(1,:), gamma(2,:),'LineWidth',2,'Color',[1 0 0]);
 
+            obj.figstrip = figure();
+            obj.axstrip = axes(obj.figstrip);
+            obj.figstrip = patch(obj.axstrip);
+            axis tight equal;
+            title('Elastic strip');
+
+            obj.drawStrip();
+
         end
 
         function mouseDown(obj, source, event)
@@ -64,11 +76,19 @@ classdef UserInterface < handle
             % CONTROL CLICK : DELETE POINT
             
             % MOVE POINTS (LEFT CLICK):
+            
+
+            
+
             if(strcmp(source.SelectionType, 'normal')) 
                 % Checks to see if a left-click is made and updates
                 % the mouseflag to be used by mouseMove              
                 obj.mouseflag = true;
                 obj.selectedInd = obj.closestPoint();
+
+                currpoint = obj.ax.CurrentPoint;
+                coord = [currpoint(1,1); currpoint(1,2)];
+
  
             % ADDING POINTS (SHIFT CLICK):
             elseif(strcmp(source.SelectionType, 'extend')) 
@@ -84,7 +104,7 @@ classdef UserInterface < handle
                     currpoint = obj.ax.CurrentPoint;
                     coord = [currpoint(1,1); currpoint(1,2)];
 
-                    obj.cp = coord;
+                    obj.updateSpline(coord);
                     obj.drawPoints();
                     
                     return
@@ -99,10 +119,13 @@ classdef UserInterface < handle
                     c1 = obj.cp(:,1:closestInd);
                     c2 = midpoint;
                     c3 = obj.cp(:,closestInd+1:end);
-                    obj.cp = [c1 c2 c3];
+                    c = [c1 c2 c3];
+                    obj.updateSpline(c);
                 else
-                    midpoint = ((obj.cp(:,end) + obj.cp(:,end-1))'./2)';
-                    obj.cp = [obj.cp(:,1:end-1), midpoint, obj.cp(:,end)];
+                    midpoint = ((obj.cp(:,end) + obj.cp(:,end-1))'./2)'; 
+                    direction = midpoint - obj.cp(:,end-1);
+                    newlastpoint = obj.cp(:,end) + direction;
+                    obj.updateSpline([obj.cp, newlastpoint]);
                 end
                 
                 % Draws contol point
@@ -115,8 +138,10 @@ classdef UserInterface < handle
                 % Deletes the control point that is control-clicked
                 
                 closestInd = obj.closestPoint();
+                c = obj.cp;
+                c(:,closestInd) = [];
 
-                obj.cp(:,closestInd) = [];
+                obj.updateSpline(c);
 
                 obj.drawPoints();
                 obj.drawSpline();
@@ -128,8 +153,8 @@ classdef UserInterface < handle
         % Updates mouseflag when mouse is not being pressed
         function mouseUp(obj, source, event)
             obj.mouseflag = false;
-%             obj.spline.setControlPoints(obj.cp);
-%             obj.drawSpline();
+            obj.drawStrip();
+
             obj.selectedInd = 0;
         end
 
@@ -141,8 +166,11 @@ classdef UserInterface < handle
                  
                  currpoint = obj.ax.CurrentPoint;
                  coords = [currpoint(1,1); currpoint(1,2)];
-                 obj.cp(:, obj.selectedInd) = coords;
-                 obj.spline.setControlPoints(obj.cp);
+                 c = obj.cp;
+                 c(:, obj.selectedInd) = coords;
+                 obj.updateSpline(c);
+
+                 
                  obj.drawPoints();
                  obj.drawSpline();
                  
@@ -157,8 +185,6 @@ classdef UserInterface < handle
             % x and y coordinates of the mouse click
             coord = [currpoint(1,1); currpoint(1,2)];
 
-%             d1 = (obj.cp(1,:)' - repmat(coord(1), size(obj.cp,2), 1));
-%             d2 = (obj.cp(2,:)' - repmat(coord(2), size(obj.cp,2), 1));
             d = obj.cp - coord;
 
             
@@ -171,6 +197,7 @@ classdef UserInterface < handle
         function drawPoints(obj)
             obj.pointpatch.Vertices = obj.cp';
             obj.pointpatch.Faces = [1:size(obj.cp,2)]';
+            %axis tight equal;
         end
 
         function drawSpline(obj)
@@ -181,15 +208,45 @@ classdef UserInterface < handle
             gamma = obj.spline.evaluate(t_samples);
             obj.splineplot.XData = gamma(1,:);
             obj.splineplot.YData = gamma(2,:);
+            %axis tight equal;
 
         end
 
         function updateSpline(obj, cp)
-            obj.spline.cp = cp;
+            obj.spline.setControlPoints(cp);
             obj.cp = cp;
 
+        end
 
-            
+        function drawStrip(obj)
+
+            t_samples = linspace(0,obj.spline.t_max,obj.num_samples);
+            gamma = obj.spline.evaluate(t_samples);
+            kappa = obj.spline.curvature(t_samples);
+            to = gamma(:,2:end)-gamma(:,1:end-1);
+            seg_lens = sqrt(sum(to.^2,1));
+            s = [0 cumsum(seg_lens)];
+
+            [~, gamma_infl] = obj.spline.findInflectionPoints();
+            lpopt = LPStiffnessOptimizer(gamma, kappa, gamma_infl);
+
+            K = lpopt.optimizeWithInflections();
+
+            if isempty(K)
+                fprintf('Curve is infeasible!');
+                return;
+            end
+
+            max_width = 0.05;
+            half_width = 0.5*max_width/max(K)*K;
+            p_simple = GeometryGenerator.generateProfileOutlineLoop(s,half_width,0.01);
+            SvgTools.exportCurves('spline-curve/strip_simple.svg', {p_simple}, 1e3/0.352778);
+
+            %obj.figstrip = patch(obj.axstrip);
+            obj.figstrip.Vertices = p_simple';
+            obj.figstrip.Faces = [1:size(p_simple,2)-1; 2:size(p_simple,2)]';
+            axis tight equal;
+
         end
 
        
