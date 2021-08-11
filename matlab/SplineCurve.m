@@ -48,7 +48,6 @@ classdef SplineCurve < handle
         % Takes control points as property and adapts properties in
         % constructor
         function setControlPoints(obj, cp)
-            obj.spline = BSpline(obj.degree);
             obj.cp = cp;
             obj.dim = size(cp, 1);
             obj.ncp = size(cp, 2);

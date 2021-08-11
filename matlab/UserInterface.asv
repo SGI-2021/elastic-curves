@@ -17,6 +17,10 @@ classdef UserInterface < handle
         spline % spline curve object
         num_samples % number of samples taken
 
+        gamma
+        kappa % curvature
+        s
+
         pointpatch % 
         mouseflag
         selectedInd % current index
@@ -51,9 +55,14 @@ classdef UserInterface < handle
             obj.num_samples = 400;
             % Sample the curve, and approximate the arc-length parameter s at every
             % sample
-            t_samples = linspace(0,obj.spline.t_max, obj.num_samples);
-            gamma = obj.spline.evaluate(t_samples);
-            obj.splineplot = plot(gamma(1,:), gamma(2,:),'LineWidth',2,'Color',[1 0 0]);
+%             t_samples = linspace(0,obj.spline.t_max, obj.num_samples);
+%             obj.gamma = obj.spline.evaluate(t_samples);
+%             obj.kappa = obj.spline.curvature(t_samples);
+%             to = obj.gamma(:,2:end)-obj.gamma(:,1:end-1);
+%             seg_lens = sqrt(sum(to.^2,1));
+%             obj.s = [0 cumsum(seg_lens)];
+
+            %obj.splineplot = plot(obj.gamma(1,:), obj.gamma(2,:),'LineWidth',2,'Color',[1 0 0]);
 
         end
 
@@ -176,19 +185,13 @@ classdef UserInterface < handle
         function drawSpline(obj)
             obj.lines.XData =  obj.cp(1,:);
             obj.lines.YData = obj.cp(2,:);
-            
-            t_samples = linspace(0,obj.spline.t_max, obj.num_samples);
-            gamma = obj.spline.evaluate(t_samples);
-            obj.splineplot.XData = gamma(1,:);
-            obj.splineplot.YData = gamma(2,:);
+            %obj.splineplot = plot(obj.gamma(1,:), obj.gamma(2,:),'LineWidth',2,'Color',[1 0 0]);
 
         end
 
         function updateSpline(obj, cp)
             obj.spline.cp = cp;
             obj.cp = cp;
-
-
             
         end
 
