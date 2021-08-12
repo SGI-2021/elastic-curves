@@ -5,7 +5,7 @@ classdef UserInterface < handle
     % How to distiguish between adding new points and dragging around
     % doc figure -> see also -> figure properties for documentations
     
-    properties(Access = private)
+    properties%(Access = private)
         cp  % control points
     end
 
@@ -18,6 +18,7 @@ classdef UserInterface < handle
         lines %lines connecting control points
         splineplot % drawing of spline
         strip % optimised strip
+        strip_patch % patch graphics object for drawing the strip outline
 
         spline % spline curve object
         num_samples % number of samples taken
@@ -32,10 +33,10 @@ classdef UserInterface < handle
             obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source),...
                              'WindowButtonUpFcn', @(source, event) obj.mouseUp(source, event), ...
                              'WindowButtonMotionFcn', @(source, event) obj.mouseMove(source, event));
-            title('Spline curve');
+            
 
             obj.ax = axes(obj.fig);
-            %axis tight equal;
+            title('Spline curve');
             xlim([-1,1]);
             ylim([-1,1]);
             obj.cp = cp;
@@ -61,7 +62,7 @@ classdef UserInterface < handle
 
             obj.figstrip = figure();
             obj.axstrip = axes(obj.figstrip);
-            obj.figstrip = patch(obj.axstrip);
+            obj.strip_patch = patch(obj.axstrip);
             axis tight equal;
             title('Elastic strip');
 
@@ -243,8 +244,10 @@ classdef UserInterface < handle
             SvgTools.exportCurves('spline-curve/strip_simple.svg', {p_simple}, 1e3/0.352778);
 
             %obj.figstrip = patch(obj.axstrip);
-            obj.figstrip.Vertices = p_simple';
-            obj.figstrip.Faces = [1:size(p_simple,2)-1; 2:size(p_simple,2)]';
+            obj.strip_patch.Vertices = p_simple';
+            obj.strip_patch.Faces = [1:size(p_simple,2)-1; 2:size(p_simple,2)]';
+            
+            figure(obj.figstrip); % make the strip figure current, so the next line affects that figure, and not the spline figure
             axis tight equal;
 
         end
