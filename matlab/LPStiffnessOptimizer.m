@@ -51,16 +51,26 @@ classdef LPStiffnessOptimizer < handle
             b = [-ones(obj.num_samples, 1), zeros(obj.num_samples, 1)];
             Aeq = [ones(size(obj.gamma_infl,2),1), obj.gamma_infl(1,:)', obj.gamma_infl(2,:)', zeros(size(obj.gamma_infl,2),1)];
             beq = zeros(size(obj.gamma_infl,2),1);
-            abM = linprog(f,A,b,Aeq,beq);
+
+            if(sum(isinf(A)) == 0)
+                abM = linprog(f,A,b,Aeq,beq);
+                obj.err = 0;
+            else
+                obj.err = 1;
+                fprintf('Curve is infeasible \n');
+                abM = [];
+
+            end
             
             if(isempty(abM))
                 obj.err = 1;
-                fprintf('Infeasible \n');
+                fprintf('Curve is infeasible \n');
                 %obj.err = 1;
                 a = [];
                 b = [];
                 K = [];
                 %warning('off');
+
             else
                 K = -(abM(1:3)' * A(1:obj.num_samples,1:3)');
                 a = abM(1);

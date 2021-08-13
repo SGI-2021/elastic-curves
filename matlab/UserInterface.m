@@ -276,9 +276,16 @@ classdef UserInterface < handle
                 obj.strip_patch.Faces = [1:size(p_simple,2)-1; 2:size(p_simple,2)]';
                 
                 figure(obj.figstrip); % make the strip figure current, so the next line affects that figure, and not the spline figure
+                title('Elastic strip');
                 axis tight equal;
 
             elseif(lpopt.err == 1)
+                
+                obj.strip_patch.Vertices = [];
+                obj.strip_patch.Faces = [];
+                
+                figure(obj.figstrip);
+                title('\color{red}Curve infeasible');
                 return;  
             end
 % 
