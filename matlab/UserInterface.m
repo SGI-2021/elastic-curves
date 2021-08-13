@@ -262,25 +262,32 @@ classdef UserInterface < handle
 
             [~, gamma_infl] = obj.spline.findInflectionPoints();
             lpopt = LPStiffnessOptimizer(gamma, kappa, gamma_infl);
-
+            %err = lpopt.err;
+            %if(err == 0)
             K = lpopt.optimizeWithInflections();
+            if (lpopt.err == 0)
+                max_width = 0.05;
+                half_width = 0.5*max_width/max(K)*K;
+                p_simple = GeometryGenerator.generateProfileOutlineLoop(s,half_width,0.01);
+                SvgTools.exportCurves('spline-curve/strip_simple.svg', {p_simple}, 1e3/0.352778);
+    
+                %obj.figstrip = patch(obj.axstrip);
+                obj.strip_patch.Vertices = p_simple';
+                obj.strip_patch.Faces = [1:size(p_simple,2)-1; 2:size(p_simple,2)]';
+                
+                figure(obj.figstrip); % make the strip figure current, so the next line affects that figure, and not the spline figure
+                axis tight equal;
 
-            if isempty(K)
-                fprintf('Curve is infeasible!');
-                return;
+            elseif(lpopt.err == 1)
+                return;  
             end
+% 
+%             if isempty(K)
+%                 fprintf('Curve is infeasible!');
+%                 return;
+%             end
 
-            max_width = 0.05;
-            half_width = 0.5*max_width/max(K)*K;
-            p_simple = GeometryGenerator.generateProfileOutlineLoop(s,half_width,0.01);
-            SvgTools.exportCurves('spline-curve/strip_simple.svg', {p_simple}, 1e3/0.352778);
 
-            %obj.figstrip = patch(obj.axstrip);
-            obj.strip_patch.Vertices = p_simple';
-            obj.strip_patch.Faces = [1:size(p_simple,2)-1; 2:size(p_simple,2)]';
-            
-            figure(obj.figstrip); % make the strip figure current, so the next line affects that figure, and not the spline figure
-            axis tight equal;
 
         end
 
