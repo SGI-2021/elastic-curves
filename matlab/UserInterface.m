@@ -84,13 +84,20 @@ classdef UserInterface < handle
             if(strcmp(source.SelectionType, 'normal')) 
                 % Checks to see if a left-click is made and updates
                 % the mouseflag to be used by mouseMove              
-                obj.mouseflag = true;
-                obj.selectedInd = obj.closestPoint();
+                
+                [d, obj.selectedInd] = obj.closestPoint();
 
-                currpoint = obj.ax.CurrentPoint;
-                coord = [currpoint(1,1); currpoint(1,2)];
+                if(d < 0.1) 
+                    obj.mouseflag = true;
+                else
+                    obj.mouseflag = false;
+                end
 
- 
+                
+%                 currpoint = obj.ax.CurrentPoint;
+%                 coord = [currpoint(1,1); currpoint(1,2)];
+% 
+%  
             % ADDING POINTS (SHIFT CLICK):
             elseif(strcmp(source.SelectionType, 'extend')) 
                 % Checks if a shift-click is made near a control point
@@ -112,40 +119,54 @@ classdef UserInterface < handle
                 end
 
                 % Computes nearest control point
-                closestInd = obj.closestPoint();
-                
-                % Adds control point
-                if(closestInd ~= size(obj.cp,2)) 
-                    midpoint = ((obj.cp(:,closestInd) + obj.cp(:,closestInd+1))'./2)';
-                    c1 = obj.cp(:,1:closestInd);
-                    c2 = midpoint;
-                    c3 = obj.cp(:,closestInd+1:end);
-                    c = [c1 c2 c3];
-                    obj.updateSpline(c);
+                [d, closestInd] = obj.closestPoint();
+
+                if(d < 0.1)
+                    % Adds control point
+                    if(closestInd ~= size(obj.cp,2)) 
+                        midpoint = ((obj.cp(:,closestInd) + obj.cp(:,closestInd+1))'./2)';
+                        c1 = obj.cp(:,1:closestInd);
+                        c2 = midpoint;
+                        c3 = obj.cp(:,closestInd+1:end);
+                        c = [c1 c2 c3];
+                        obj.updateSpline(c);
+                    elseif(closestInd == size(obj.cp,2))
+                        midpoint = ((obj.cp(:,end) + obj.cp(:,end-1))'./2)'; 
+                        direction = midpoint - obj.cp(:,end-1);
+                        newlastpoint = obj.cp(:,end) + direction;
+                        obj.updateSpline([obj.cp, newlastpoint]);
+                    end
+
+                    % Draws contol point
+                    obj.drawPoints();
+                    obj.drawSpline();
+                    obj.drawStrip();
+
                 else
-                    midpoint = ((obj.cp(:,end) + obj.cp(:,end-1))'./2)'; 
-                    direction = midpoint - obj.cp(:,end-1);
-                    newlastpoint = obj.cp(:,end) + direction;
-                    obj.updateSpline([obj.cp, newlastpoint]);
+                    obj.mouseflag = false;
                 end
-                
-                % Draws contol point
-                obj.drawPoints();
-                obj.drawSpline();
+              
                                
             % DELETING POINTS (CONTROL-CLICK)
             elseif(strcmp(source.SelectionType, 'alt'))
                 % Checks for a control-click
                 % Deletes the control point that is control-clicked
                 
-                closestInd = obj.closestPoint();
-                c = obj.cp;
-                c(:,closestInd) = [];
+                [d, closestInd] = obj.closestPoint();
 
-                obj.updateSpline(c);
+                if(d < 0.1) 
+                    c = obj.cp;
+                    c(:,closestInd) = [];
 
-                obj.drawPoints();
-                obj.drawSpline();
+                    obj.updateSpline(c);
+
+                    obj.drawPoints();
+                    obj.drawSpline();
+                    obj.drawStrip();
+
+                else
+                    obj.mouseflag = false;
+                end
                 
             end
         end
@@ -154,7 +175,7 @@ classdef UserInterface < handle
         % Updates mouseflag when mouse is not being pressed
         function mouseUp(obj, source, event)
             obj.mouseflag = false;
-            obj.drawStrip();
+            %obj.drawStrip();
 
             obj.selectedInd = 0;
         end
@@ -174,23 +195,34 @@ classdef UserInterface < handle
                  
                  obj.drawPoints();
                  obj.drawSpline();
+                 obj.drawStrip();
                  
             end
         
         end
         
         % Finds the closest control point when mouse is clicked
-        function Ind = closestPoint(obj)
+        function [M, Ind] = closestPoint(obj)
+            
             % 2x3 matlab matrix where mouse click is
             currpoint = obj.ax.CurrentPoint;
             % x and y coordinates of the mouse click
             coord = [currpoint(1,1); currpoint(1,2)];
 
             d = obj.cp - coord;
+            dnorm = sum(d.^2,1);
 
-            
-            [~, Ind] = min(sum(d.^2,1));
-            
+            [M, Ind] = min(dnorm);
+% 
+%             if(dnorm < 1)
+%                 obj.mouseflag = true;
+%                 [~, Ind] = min(dnorm);
+%             
+%             else
+%                 obj.mouseflag = false;
+%                 Ind = -1;
+%             end
+
         end
         
 

@@ -5,7 +5,7 @@ classdef UserInterface < handle
     % How to distiguish between adding new points and dragging around
     % doc figure -> see also -> figure properties for documentations
     
-    properties(Access = private)
+    properties%(Access = private)
         cp  % control points
     end
 
@@ -18,6 +18,7 @@ classdef UserInterface < handle
         lines %lines connecting control points
         splineplot % drawing of spline
         strip % optimised strip
+        strip_patch % patch graphics object for drawing the strip outline
 
         spline % spline curve object
         num_samples % number of samples taken
@@ -32,10 +33,12 @@ classdef UserInterface < handle
             obj.fig = figure('WindowButtonDownFcn', @(source, event) obj.mouseDown(source),...
                              'WindowButtonUpFcn', @(source, event) obj.mouseUp(source, event), ...
                              'WindowButtonMotionFcn', @(source, event) obj.mouseMove(source, event));
-            title('Spline curve');
+            
 
             obj.ax = axes(obj.fig);
-            axis tight equal;
+            title('Spline curve');
+            xlim([-1,1]);
+            ylim([-1,1]);
             obj.cp = cp;
 
             obj.mouseflag = false;
@@ -59,7 +62,7 @@ classdef UserInterface < handle
 
             obj.figstrip = figure();
             obj.axstrip = axes(obj.figstrip);
-            obj.figstrip = patch(obj.axstrip);
+            obj.strip_patch = patch(obj.axstrip);
             axis tight equal;
             title('Elastic strip');
 
@@ -74,19 +77,19 @@ classdef UserInterface < handle
             % CONTROL CLICK : DELETE POINT
             
             % MOVE POINTS (LEFT CLICK):
-            currpoint = obj.ax.CurrentPoint;
-            coord = [currpoint(1,1); currpoint(1,2)];
+            
 
-            if(coord(1) > obj.ax.XLim(2) ||  coord(1) < obj.ax.XLim(1) ...
-                    || coord(2) > obj.ax.YLim(2) || coord(2) < obj.ax.YLim(2))  
-                return;
-            end
+            
 
             if(strcmp(source.SelectionType, 'normal')) 
                 % Checks to see if a left-click is made and updates
                 % the mouseflag to be used by mouseMove              
                 obj.mouseflag = true;
-                obj.selectedInd = obj.closestPoint();
+                [d, obj.selectedInd] = obj.closestPoint();
+
+                currpoint = obj.ax.CurrentPoint;
+                coord = [currpoint(1,1); currpoint(1,2)];
+
  
             % ADDING POINTS (SHIFT CLICK):
             elseif(strcmp(source.SelectionType, 'extend')) 
@@ -109,38 +112,52 @@ classdef UserInterface < handle
                 end
 
                 % Computes nearest control point
-                closestInd = obj.closestPoint();
-                
-                % Adds control point
-                if(closestInd ~= size(obj.cp,2)) 
-                    midpoint = ((obj.cp(:,closestInd) + obj.cp(:,closestInd+1))'./2)';
-                    c1 = obj.cp(:,1:closestInd);
-                    c2 = midpoint;
-                    c3 = obj.cp(:,closestInd+1:end);
-                    c = [c1 c2 c3];
-                    obj.updateSpline(c);
+                [d, closestInd] = obj.closestPoint();
+
+                if(d < 0.5)
+                    % Adds control point
+                    if(closestInd ~= size(obj.cp,2)) 
+                        midpoint = ((obj.cp(:,closestInd) + obj.cp(:,closestInd+1))'./2)';
+                        c1 = obj.cp(:,1:closestInd);
+                        c2 = midpoint;
+                        c3 = obj.cp(:,closestInd+1:end);
+                        c = [c1 c2 c3];
+                        obj.updateSpline(c);
+                    elseif(closestInd == size(obj.cp,2))
+                        midpoint = ((obj.cp(:,end) + obj.cp(:,end-1))'./2)'; 
+                        direction = midpoint - obj.cp(:,end-1);
+                        newlastpoint = obj.cp(:,end) + direction;
+                        obj.updateSpline([obj.cp, newlastpoint]);
+                    end
+
+                    % Draws contol point
+                    obj.drawPoints();
+                    obj.drawSpline();
+
                 else
-                    midpoint = ((obj.cp(:,end) + obj.cp(:,end-1))'./2)';
-                    obj.updateSpline([obj.cp(:,1:end-1), midpoint, obj.cp(:,end)]);
+                    obj.mouseflag = false;
                 end
-                
-                % Draws contol point
-                obj.drawPoints();
-                obj.drawSpline();
+              
                                
             % DELETING POINTS (CONTROL-CLICK)
             elseif(strcmp(source.SelectionType, 'alt'))
                 % Checks for a control-click
                 % Deletes the control point that is control-clicked
                 
-                closestInd = obj.closestPoint();
-                c = obj.cp;
-                c(:,closestInd) = [];
+                [d, closestInd] = obj.closestPoint();
 
-                obj.updateSpline(c);
+                if(d < 0.5) 
+                    c = obj.cp;
+                    c(:,closestInd) = [];
 
-                obj.drawPoints();
-                obj.drawSpline();
+                    obj.updateSpline(c);
+
+                    obj.drawPoints();
+                    obj.drawSpline();
+
+                else
+                    obj.mouseflag = false;
+                end
                 
             end
         end
@@ -175,17 +192,27 @@ classdef UserInterface < handle
         end
         
         % Finds the closest control point when mouse is clicked
-        function Ind = closestPoint(obj)
+        function [dnorm, Ind] = closestPoint(obj)
+            
             % 2x3 matlab matrix where mouse click is
             currpoint = obj.ax.CurrentPoint;
             % x and y coordinates of the mouse click
             coord = [currpoint(1,1); currpoint(1,2)];
 
             d = obj.cp - coord;
+            dnorm = sum(d.^2,1);
 
-            
-            [~, Ind] = min(sum(d.^2,1));
-            
+            [~, Ind] = min(dnorm);
+% 
+%             if(dnorm < 1)
+%                 obj.mouseflag = true;
+%                 [~, Ind] = min(dnorm);
+%             
+%             else
+%                 obj.mouseflag = false;
+%                 Ind = -1;
+%             end
+
         end
         
 
@@ -193,6 +220,7 @@ classdef UserInterface < handle
         function drawPoints(obj)
             obj.pointpatch.Vertices = obj.cp';
             obj.pointpatch.Faces = [1:size(obj.cp,2)]';
+            %axis tight equal;
         end
 
         function drawSpline(obj)
@@ -203,6 +231,7 @@ classdef UserInterface < handle
             gamma = obj.spline.evaluate(t_samples);
             obj.splineplot.XData = gamma(1,:);
             obj.splineplot.YData = gamma(2,:);
+            %axis tight equal;
 
         end
 
@@ -237,8 +266,10 @@ classdef UserInterface < handle
             SvgTools.exportCurves('spline-curve/strip_simple.svg', {p_simple}, 1e3/0.352778);
 
             %obj.figstrip = patch(obj.axstrip);
-            obj.figstrip.Vertices = p_simple';
-            obj.figstrip.Faces = [1:size(p_simple,2)-1; 2:size(p_simple,2)]';
+            obj.strip_patch.Vertices = p_simple';
+            obj.strip_patch.Faces = [1:size(p_simple,2)-1; 2:size(p_simple,2)]';
+            
+            figure(obj.figstrip); % make the strip figure current, so the next line affects that figure, and not the spline figure
             axis tight equal;
 
         end
