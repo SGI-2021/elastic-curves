@@ -169,8 +169,7 @@ classdef UserInterface < handle
 
                 else
                     obj.mouseflag = false;
-                end
-              
+                end 
                                
             % DELETING POINTS (CONTROL-CLICK)
             elseif(strcmp(source.SelectionType, 'alt'))
@@ -194,9 +193,9 @@ classdef UserInterface < handle
                 end
                 
             end
+
         end
 
-     
         % Updates mouseflag when mouse is not being pressed
         function mouseUp(obj, source, event)
             % Set mouseflag to false since mouse is up
@@ -239,67 +238,68 @@ classdef UserInterface < handle
             d = obj.cp - coord;
             dnorm = sum(d.^2,1);
 
-            % 
+            % Returns the index of the point closest to the mouse as well
+            % as the distance of this point from the mouse
             [M, Ind] = min(dnorm);
-% 
-%             if(dnorm < 1)
-%                 obj.mouseflag = true;
-%                 [~, Ind] = min(dnorm);
-%             
-%             else
-%                 obj.mouseflag = false;
-%                 Ind = -1;
-%             end
 
         end
         
-
         % Updates and draws control points
         function drawPoints(obj)
             obj.pointpatch.Vertices = obj.cp';
             obj.pointpatch.Faces = [1:size(obj.cp,2)]';
-            %axis tight equal;
         end
 
+        % Draws spline from the control poins
         function drawSpline(obj)
             obj.lines.XData =  obj.cp(1,:);
             obj.lines.YData = obj.cp(2,:);
-            
-            t_samples = linspace(0,obj.spline.t_max, obj.num_samples);
-            gamma = obj.spline.evaluate(t_samples);
-            obj.splineplot.XData = gamma(1,:);
-            obj.splineplot.YData = gamma(2,:);
-            %axis tight equal;
 
+            if(size(obj.cp, 2) >= obj.spline.degree + 1)
+                t_samples = linspace(0,obj.spline.t_max, obj.num_samples);
+                gamma = obj.spline.evaluate(t_samples);
+                obj.splineplot.XData = gamma(1,:);
+                obj.splineplot.YData = gamma(2,:);
+                obj.errspline = 0;
+            else
+                obj.splineplot.XData = [];
+                obj.splineplot.YData = [];
+                warning('off');
+                obj.errspline = 1;
+            end
         end
 
+        % Updates spline information
         function updateSpline(obj, cp)
             obj.spline.setControlPoints(cp);
             obj.cp = cp;
-
         end
-
+        
+        % Draws the corresponding elastic strip
         function drawStrip(obj)
-
+            % Sample the curve, and approximate the arc-length parameter s at every
+            % sample
             t_samples = linspace(0,obj.spline.t_max,obj.num_samples);
             gamma = obj.spline.evaluate(t_samples);
             kappa = obj.spline.curvature(t_samples);
             to = gamma(:,2:end)-gamma(:,1:end-1);
             seg_lens = sqrt(sum(to.^2,1));
             s = [0 cumsum(seg_lens)];
-
+            
+            % Initialize stiffness optimizer
             [~, gamma_infl] = obj.spline.findInflectionPoints();
             lpopt = LPStiffnessOptimizer(gamma, kappa, gamma_infl);
-            %err = lpopt.err;
-            %if(err == 0)
+            
+            % Solve the linear programme to find K
             K = lpopt.optimizeWithInflections();
+            
             if (lpopt.err == 0)
+                % Generate simple strip outline and plot
                 max_width = 0.05;
                 half_width = 0.5*max_width/max(K)*K;
                 p_simple = GeometryGenerator.generateProfileOutlineLoop(s,half_width,0.01);
                 SvgTools.exportCurves('spline-curve/strip_simple.svg', {p_simple}, 1e3/0.352778);
     
-                %obj.figstrip = patch(obj.axstrip);
                 obj.strip_patch.Vertices = p_simple';
                 obj.strip_patch.Faces = [1:size(p_simple,2)-1; 2:size(p_simple,2)]';
                 
@@ -308,7 +308,7 @@ classdef UserInterface < handle
                 axis tight equal;
 
             elseif(lpopt.err == 1)
-                
+                % Do not plot anything if the curve is infeasible
                 obj.strip_patch.Vertices = [];
                 obj.strip_patch.Faces = [];
                 
@@ -316,18 +316,10 @@ classdef UserInterface < handle
                 title('\color{red}Curve infeasible');
                 return;  
             end
-% 
-%             if isempty(K)
-%                 fprintf('Curve is infeasible!');
-%                 return;
-%             end
-
-
 
         end
 
-       
-
     end
+
 end
 

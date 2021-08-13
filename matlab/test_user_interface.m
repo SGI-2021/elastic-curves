@@ -8,7 +8,3 @@ scale = 0.08;
 spline.cp = spline.cp * scale;
 
 UI = UserInterface(spline.cp);
-
-
-
-

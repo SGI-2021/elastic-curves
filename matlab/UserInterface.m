@@ -23,6 +23,8 @@ classdef UserInterface < handle
         pointpatch % patch graphics object for drawing the control points
         mouseflag % set to true if the mouse is down and near a point, set to false otherwise
         selectedInd % current index
+
+        errspline % set to zero if there are no errors, set to one if spline cannot be drawn
     end
     
     methods
@@ -193,7 +195,7 @@ classdef UserInterface < handle
                 end
                 
             end
-            
+
         end
 
         % Updates mouseflag when mouse is not being pressed
@@ -254,11 +256,19 @@ classdef UserInterface < handle
         function drawSpline(obj)
             obj.lines.XData =  obj.cp(1,:);
             obj.lines.YData = obj.cp(2,:);
-            
-            t_samples = linspace(0,obj.spline.t_max, obj.num_samples);
-            gamma = obj.spline.evaluate(t_samples);
-            obj.splineplot.XData = gamma(1,:);
-            obj.splineplot.YData = gamma(2,:);
+
+            if(size(obj.cp, 2) >= obj.spline.degree + 1)
+                t_samples = linspace(0,obj.spline.t_max, obj.num_samples);
+                gamma = obj.spline.evaluate(t_samples);
+                obj.splineplot.XData = gamma(1,:);
+                obj.splineplot.YData = gamma(2,:);
+                obj.errspline = 0;
+            else
+                obj.splineplot.XData = [];
+                obj.splineplot.YData = [];
+                warning('off');
+                obj.errspline = 1;
+            end
         end
 
         % Updates spline information
@@ -269,6 +279,17 @@ classdef UserInterface < handle
         
         % Draws the corresponding elastic strip
         function drawStrip(obj)
+            % Strip is not drawn if there are too few control points
+            if(obj.errspline == 1)
+                obj.strip_patch.Vertices = [];
+                obj.strip_patch.Faces = [];
+                
+                figure(obj.figstrip);
+                title('\color{red}Curve infeasible');
+
+                return;
+            end
+
             % Sample the curve, and approximate the arc-length parameter s at every
             % sample
             t_samples = linspace(0,obj.spline.t_max,obj.num_samples);
@@ -284,7 +305,7 @@ classdef UserInterface < handle
             
             % Solve the linear programme to find K
             K = lpopt.optimizeWithInflections();
-
+            
             if (lpopt.err == 0)
                 % Generate simple strip outline and plot
                 max_width = 0.05;
